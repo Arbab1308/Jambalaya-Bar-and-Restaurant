@@ -91,10 +91,6 @@ export default function ReserveTableForm({
     };
 
     saveReservation(reservation);
-    toast.success("Reservation request saved", {
-      description: "We’ll confirm shortly via call/WhatsApp."
-    });
-
     form.reset(defaultValues);
     onSuccess?.(reservation);
   };
