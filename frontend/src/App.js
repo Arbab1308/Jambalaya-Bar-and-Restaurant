@@ -2,13 +2,13 @@ import React from "react";
 import "@/App.css";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LandingPage from "@/pages/LandingPage";
+import RestaurantLanding from "@/pages/RestaurantLanding";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<RestaurantLanding />} />
       </Routes>
     </BrowserRouter>
   );
