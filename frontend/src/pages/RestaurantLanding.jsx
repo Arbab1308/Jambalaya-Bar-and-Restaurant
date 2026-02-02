@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,18 @@ import {
 
 import {
   ArrowRight,
+  ArrowDown,
   CalendarCheck,
   Clock,
   MapPin,
   Phone,
   Star,
   Users,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Leaf,
+  Flame,
+  Music,
+  Wine
 } from "lucide-react";
 
 import ReserveTableForm from "@/components/ReserveTableForm";
@@ -45,49 +50,119 @@ import {
 } from "@/mock";
 
 const NAV = [
+  { id: "signature", label: "Signature" },
   { id: "menu", label: "Menu" },
   { id: "events", label: "Events" },
   { id: "gallery", label: "Gallery" },
   { id: "reviews", label: "Reviews" },
-  { id: "private", label: "Private Parties" },
   { id: "contact", label: "Contact" }
 ];
 
-const Section = ({ id, eyebrow, title, desc, children, className = "" }) => (
-  <section id={id} className={cn("scroll-mt-24", className)}>
-    <div className="max-w-6xl mx-auto px-5">
-      <div className="max-w-3xl">
-        {eyebrow && (
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-800/80">
-            {eyebrow}
-          </p>
-        )}
-        {title && (
-          <h2 className="mt-2 font-serif text-4xl md:text-5xl leading-[1.05] text-slate-950">
-            {title}
-          </h2>
-        )}
-        {desc && (
-          <p className="mt-4 text-base md:text-lg text-slate-800/90 leading-relaxed">
-            {desc}
-          </p>
-        )}
-      </div>
-      <div className="mt-10">{children}</div>
+// Intersection Observer Hook for scroll animations
+function useInView(options = {}) {
+  const ref = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.1, ...options });
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [options]);
+
+  return [ref, isInView];
+}
+
+// Animated Section Component
+function AnimatedSection({ children, className = "", delay = 0 }) {
+  const [ref, isInView] = useInView();
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "transition-all duration-700 ease-out",
+        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+        className
+      )}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
     </div>
-  </section>
-);
+  );
+}
+
+function Section({ id, eyebrow, title, desc, children, className = "", dark = false }) {
+  const [ref, isInView] = useInView();
+
+  return (
+    <section
+      id={id}
+      className={cn(
+        "scroll-mt-20 py-20 md:py-28",
+        dark ? "bg-[var(--color-primary-dark)] text-[var(--color-cream)]" : "",
+        className
+      )}
+    >
+      <div className="max-w-6xl mx-auto px-5 md:px-8">
+        <div
+          ref={ref}
+          className={cn(
+            "max-w-3xl transition-all duration-700",
+            isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          )}
+        >
+          {eyebrow && (
+            <p className={cn(
+              "eyebrow mb-4",
+              dark ? "text-[var(--color-accent)]" : ""
+            )}>
+              {eyebrow}
+            </p>
+          )}
+          {title && (
+            <h2 className={cn(
+              "section-title",
+              dark ? "text-[var(--color-cream)]" : "text-[var(--color-primary-dark)]"
+            )}>
+              {title}
+            </h2>
+          )}
+          {desc && (
+            <p className={cn(
+              "mt-5 text-lg leading-relaxed",
+              dark ? "text-[var(--color-cream)]/80" : "text-[var(--color-charcoal)]/70"
+            )}>
+              {desc}
+            </p>
+          )}
+          <div className="divider-accent mt-6" />
+        </div>
+        <div className="mt-12">{children}</div>
+      </div>
+    </section>
+  );
+}
 
 function Stars({ rating = 5 }) {
-  const items = [1, 2, 3, 4, 5];
   return (
     <div className="flex items-center gap-1" aria-label={`${rating} out of 5`}>
-      {items.map((i) => (
+      {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
           className={cn(
             "h-4 w-4",
-            i <= rating ? "text-slate-950 fill-slate-950" : "text-slate-400"
+            i <= rating
+              ? "text-[var(--color-accent)] fill-[var(--color-accent)]"
+              : "text-[var(--color-charcoal)]/20"
           )}
         />
       ))}
@@ -98,205 +173,278 @@ function Stars({ rating = 5 }) {
 export default function RestaurantLanding() {
   const [config] = useState(siteConfig);
   const reserveRef = useRef(null);
+  const [scrolled, setScrolled] = useState(false);
 
-  const scrollTo = (id) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollTo = useCallback((id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
-  const heroStats = useMemo(
+  const heroFeatures = useMemo(
     () => [
-      { k: "Tonight", v: "Cocktail hour", sub: "5 PM – 7 PM" },
-      { k: "Best seats", v: "Stage-side tables", sub: "Reserve early" },
-      { k: "Groups", v: "20+ guests", sub: "Private booking" }
+      { icon: Flame, label: "Wood-Oven Kitchen", desc: "Authentic flavors" },
+      { icon: Wine, label: "Craft Cocktails", desc: "House specials" },
+      { icon: Music, label: "Live Music", desc: "Every weekend" }
     ],
     []
   );
 
-  const onReservationSaved = () => {
+  const onReservationSaved = useCallback(() => {
     toast.success("Reservation request saved", {
-      description: "We’ll confirm shortly via call/WhatsApp."
+      description: "We'll confirm shortly via call/WhatsApp."
     });
-  };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
+    <div className="min-h-screen bg-[var(--color-cream)]">
       {/* Header */}
-      <div className="sticky top-0 z-50">
-        <div className="backdrop-blur-xl bg-white/35 border-b border-black/10">
-          <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
-            <button
-              onClick={() => scrollTo("top")}
-              className="text-left"
-              type="button"
-            >
-              <p className="font-serif text-xl leading-none text-slate-950">
-                {config.brandName}
-              </p>
-              <p className="text-xs text-slate-700">{config.city}</p>
-            </button>
+      <header
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          scrolled ? "header-blur py-3" : "bg-transparent py-5"
+        )}
+      >
+        <div className="max-w-6xl mx-auto px-5 md:px-8 flex items-center justify-between">
+          <button
+            onClick={() => scrollTo("top")}
+            className="text-left group"
+            type="button"
+          >
+            <p className={cn(
+              "font-display text-xl font-semibold tracking-tight transition-colors",
+              scrolled ? "text-[var(--color-primary-dark)]" : "text-[var(--color-cream)]"
+            )}>
+              {config.brandName}
+            </p>
+            <p className={cn(
+              "text-xs font-medium transition-colors",
+              scrolled ? "text-[var(--color-primary)]/60" : "text-[var(--color-cream)]/70"
+            )}>
+              {config.city}
+            </p>
+          </button>
 
-            <nav className="hidden lg:flex items-center gap-6">
-              {NAV.map((n) => (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => scrollTo(n.id)}
-                  className="text-sm text-slate-800 hover:text-slate-950 transition-colors duration-200"
-                >
-                  {n.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="flex items-center gap-2">
-              <Button
-                className="bg-slate-950 text-white hover:bg-slate-900 btn-lift"
-                onClick={() => reserveRef.current?.scrollIntoView({ behavior: "smooth" })}
+          <nav className="hidden lg:flex items-center gap-8">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => scrollTo(n.id)}
+                className={cn(
+                  "nav-link text-sm",
+                  scrolled ? "" : "text-[var(--color-cream)] hover:text-[var(--color-accent)]"
+                )}
               >
-                Reserve a Table
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+                {n.label}
+              </button>
+            ))}
+          </nav>
 
-      {/* Hero */}
-      <header id="top" className="relative overflow-hidden">
+          <Button
+            className="btn-accent"
+            onClick={() => reserveRef.current?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Reserve Now
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero - Massive Typography */}
+      <section id="top" className="relative min-h-screen flex items-end overflow-hidden">
+        {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${media.heroBackground})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/45 to-[hsl(var(--background))]/95" />
-        <div className="absolute inset-0 hero-grain" />
 
-        <div className="relative max-w-6xl mx-auto px-5 pt-16 pb-14 md:pt-24 md:pb-20">
-          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-start">
-            <div className="text-white">
-              <Badge className="bg-white/15 text-white border-white/25 backdrop-blur-md">
-                Table reservations • Groups • Private parties
-              </Badge>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 gradient-hero" />
 
-              <h1 className="mt-5 font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
-                A bar & kitchen built for
-                <span className="text-white/90"> long nights</span>.
-              </h1>
+        {/* Grain Texture */}
+        <div className="grain-overlay" />
 
-              <p className="mt-6 max-w-xl text-base md:text-lg text-white/85 leading-relaxed">
-                {config.tagline}
-              </p>
+        {/* Content */}
+        <div className="relative z-10 w-full pb-16 md:pb-24">
+          <div className="max-w-6xl mx-auto px-5 md:px-8">
+            {/* Main Hero Content */}
+            <div className="grid lg:grid-cols-[1.3fr_0.7fr] gap-12 items-end">
+              {/* Left - Typography */}
+              <div className="animate-fade-in-up">
+                <Badge className="badge-premium mb-6">
+                  <Leaf className="h-3 w-3 mr-2" />
+                  Table Reservations • Private Events
+                </Badge>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => reserveRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  className="bg-white text-slate-950 hover:bg-white/90 btn-lift"
-                >
-                  Reserve in 30 seconds
-                  <CalendarCheck className="ml-2 h-4 w-4" />
-                </Button>
+                <h1 className="hero-title text-[var(--color-cream)]">
+                  Where the night
+                  <br />
+                  <span className="hero-title-accent">comes alive</span>
+                </h1>
 
-                <Button
-                  variant="outline"
-                  onClick={() => scrollTo("menu")}
-                  className="border-white/35 bg-white/10 text-white hover:bg-white/15"
-                >
-                  See the menu
-                  <UtensilsCrossed className="ml-2 h-4 w-4" />
-                </Button>
+                <p className="mt-8 max-w-lg text-lg text-[var(--color-cream)]/85 leading-relaxed">
+                  {config.tagline}
+                </p>
+
+                {/* Feature Pills */}
+                <div className="mt-10 flex flex-wrap gap-4">
+                  {heroFeatures.map((f, i) => (
+                    <div
+                      key={f.label}
+                      className={cn(
+                        "flex items-center gap-3 px-5 py-3 rounded-sm",
+                        "bg-[var(--color-cream)]/10 backdrop-blur-sm",
+                        "border border-[var(--color-cream)]/20",
+                        "animate-fade-in-up",
+                        i === 0 ? "stagger-2" : i === 1 ? "stagger-3" : "stagger-4"
+                      )}
+                    >
+                      <f.icon className="h-5 w-5 text-[var(--color-accent)]" />
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-cream)]">{f.label}</p>
+                        <p className="text-xs text-[var(--color-cream)]/60">{f.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                  <Button
+                    onClick={() => reserveRef.current?.scrollIntoView({ behavior: "smooth" })}
+                    className="btn-accent text-base"
+                  >
+                    Reserve Your Table
+                    <CalendarCheck className="ml-2 h-5 w-5" />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => scrollTo("menu")}
+                    className="border-[var(--color-cream)]/30 bg-transparent text-[var(--color-cream)] hover:bg-[var(--color-cream)]/10"
+                  >
+                    Explore Menu
+                    <UtensilsCrossed className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {heroStats.map((s) => (
-                  <Card
-                    key={s.k}
-                    className="border-white/15 bg-white/10 backdrop-blur-xl text-white"
-                  >
-                    <CardContent className="p-4">
-                      <p className="text-xs text-white/70">{s.k}</p>
-                      <p className="mt-1 font-semibold">{s.v}</p>
-                      <p className="text-sm text-white/80">{s.sub}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+              {/* Right - Quick Info */}
+              <div className="animate-slide-in-right stagger-3">
+                <Card className="card-dark rounded-none">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-[var(--color-accent)]" />
+                        <span className="text-sm text-[var(--color-cream)]/70">Open Today</span>
+                      </div>
+                      <span className="font-semibold text-[var(--color-cream)]">
+                        {config.contact.hours[0].value}
+                      </span>
+                    </div>
+
+                    <Separator className="bg-[var(--color-cream)]/10" />
+
+                    <a
+                      href={`tel:${config.contact.phoneTel}`}
+                      className="flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-5 w-5 text-[var(--color-accent)]" />
+                        <span className="text-sm text-[var(--color-cream)]/70">Call Us</span>
+                      </div>
+                      <span className="font-semibold text-[var(--color-cream)] group-hover:text-[var(--color-accent)] transition-colors">
+                        {config.contact.phoneDisplay}
+                      </span>
+                    </a>
+
+                    <Separator className="bg-[var(--color-cream)]/10" />
+
+                    <a
+                      href={config.contact.mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-[var(--color-accent)]" />
+                        <span className="text-sm text-[var(--color-cream)]/70">Location</span>
+                      </div>
+                      <span className="font-semibold text-[var(--color-cream)] group-hover:text-[var(--color-accent)] transition-colors">
+                        Get Directions →
+                      </span>
+                    </a>
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
-            <div ref={reserveRef} className="lg:pt-2">
-              <ReserveTableForm variant="hero" onSuccess={onReservationSaved} />
-
-              <div className="mt-4 grid gap-2">
-                <div className="flex items-center justify-between rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl px-4 py-3 text-white">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-white/80" />
-                    <p className="text-sm text-white/85">Open today</p>
-                  </div>
-                  <p className="text-sm font-medium">{config.contact.hours[0].value}</p>
-                </div>
-                <a
-                  href={`tel:${config.contact.phoneTel}`}
-                  className="flex items-center justify-between rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl px-4 py-3 text-white transition-colors duration-200 hover:bg-white/15"
-                >
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-white/80" />
-                    <p className="text-sm text-white/85">Call to confirm</p>
-                  </div>
-                  <p className="text-sm font-medium">{config.contact.phoneDisplay}</p>
-                </a>
-              </div>
-
-              <p className="mt-3 text-xs text-white/70 leading-relaxed">
-                Note: reservations are currently MOCKED (saved in this browser). We
-                can connect WhatsApp/email + backend next.
-              </p>
+            {/* Scroll Indicator */}
+            <div className="mt-16 flex justify-center animate-fade-in stagger-5">
+              <button
+                onClick={() => scrollTo("signature")}
+                className="scroll-indicator flex flex-col items-center gap-2 text-[var(--color-cream)]/50 hover:text-[var(--color-accent)] transition-colors"
+              >
+                <span className="text-xs uppercase tracking-widest">Discover</span>
+                <ArrowDown className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Signature */}
+      {/* Signature Dishes */}
       <Section
         id="signature"
-        eyebrow="Signature Picks"
-        title="Start strong. Finish sweet."
-        desc="A quick shortlist for first-timers — dishes that match the bar energy."
-        className="py-16 md:py-24"
+        eyebrow="Chef's Selection"
+        title="Signature Dishes"
+        desc="Hand-picked favorites that define our kitchen — bold flavors, beautiful presentation, unforgettable taste."
       >
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {signatureDishes.map((d) => (
-            <Card
-              key={d.id}
-              className="group overflow-hidden border-black/10 bg-white/20 backdrop-blur-xl"
-            >
-              <div className="relative h-44 overflow-hidden">
-                <img
-                  alt={d.name}
-                  src={d.imageUrl}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                <Badge className="absolute left-3 top-3 bg-white/20 text-white border-white/25 backdrop-blur-md">
-                  {d.pill}
-                </Badge>
-              </div>
+          {signatureDishes.slice(0, 6).map((d, i) => (
+            <AnimatedSection key={d.id} delay={i * 100}>
+              <Card className="card-premium rounded-none overflow-hidden group">
+                <div className="img-zoom relative h-52">
+                  <img
+                    alt={d.name}
+                    src={d.imageUrl}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-charcoal)]/70 to-transparent" />
+                  <Badge className="absolute left-4 bottom-4 badge-premium rounded-none">
+                    {d.pill}
+                  </Badge>
+                </div>
 
-              <CardHeader className="pb-2">
-                <CardTitle className="font-serif text-2xl text-slate-950">
-                  {d.name}
-                </CardTitle>
-                <p className="text-sm text-slate-700 leading-relaxed">{d.desc}</p>
-              </CardHeader>
-              <CardContent className="pt-0 pb-5 flex items-center justify-between">
-                <p className="font-semibold text-slate-950">{d.price}</p>
-                <Button
-                  variant="outline"
-                  className="bg-white/30 border-black/15 hover:bg-white/45 btn-lift"
-                  onClick={() => scrollTo("menu")}
-                >
-                  Find it
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="font-display text-2xl text-[var(--color-primary-dark)]">
+                    {d.name}
+                  </CardTitle>
+                  <p className="text-sm text-[var(--color-charcoal)]/60 leading-relaxed">
+                    {d.desc}
+                  </p>
+                </CardHeader>
+
+                <CardContent className="pt-0 pb-5 flex items-center justify-between">
+                  <p className="price-tag text-xl">{d.price}</p>
+                  <Button
+                    variant="outline"
+                    className="btn-secondary rounded-none"
+                    onClick={() => scrollTo("menu")}
+                  >
+                    View in Menu
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </AnimatedSection>
           ))}
         </div>
       </Section>
@@ -304,10 +452,10 @@ export default function RestaurantLanding() {
       {/* Menu */}
       <Section
         id="menu"
-        eyebrow="Menu"
-        title="Big variety. Zero confusion."
-        desc="Search and skim quickly — then settle in for the good part."
-        className="py-16 md:py-24"
+        eyebrow="Our Menu"
+        title="Taste the Diversity"
+        desc="From Goan classics to wood-oven pizzas — every dish tells a story of local ingredients and global inspiration."
+        className="bg-[var(--color-cream-dark)]"
       >
         <MenuAccordion categories={menuCategories} />
       </Section>
@@ -315,39 +463,48 @@ export default function RestaurantLanding() {
       {/* Events */}
       <Section
         id="events"
-        eyebrow="Events"
-        title="When the lights warm up, the room gets louder."
-        desc="Book around our weekly moments — or bring your own reason to celebrate."
-        className="py-16 md:py-24"
+        eyebrow="What's Happening"
+        title="Events & Experiences"
+        desc="Live music, cocktail hours, and brunch clubs — there's always a reason to visit."
       >
         <div className="grid lg:grid-cols-3 gap-6">
-          {events.map((e) => (
-            <Card key={e.id} className="border-black/10 bg-white/20 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="font-serif text-2xl text-slate-950">
-                  {e.title}
-                </CardTitle>
-                <p className="text-sm text-slate-700 leading-relaxed">{e.desc}</p>
-              </CardHeader>
-              <CardContent className="pt-0 pb-6">
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-800">
-                    <Clock className="h-4 w-4" />
-                    <span>{e.when}</span>
+          {events.map((e, i) => (
+            <AnimatedSection key={e.id} delay={i * 150}>
+              <Card className="card-premium rounded-none h-full flex flex-col">
+                <CardHeader className="flex-1">
+                  <div className="w-12 h-12 rounded-none bg-[var(--color-primary)]/10 flex items-center justify-center mb-4">
+                    {i === 0 ? <Music className="h-6 w-6 text-[var(--color-primary)]" /> :
+                      i === 1 ? <Wine className="h-6 w-6 text-[var(--color-primary)]" /> :
+                        <UtensilsCrossed className="h-6 w-6 text-[var(--color-primary)]" />}
                   </div>
-                  <div className="rounded-lg border border-black/10 bg-white/25 px-3 py-2 text-sm text-slate-800">
+                  <CardTitle className="font-display text-2xl text-[var(--color-primary-dark)]">
+                    {e.title}
+                  </CardTitle>
+                  <p className="text-sm text-[var(--color-charcoal)]/60 leading-relaxed">
+                    {e.desc}
+                  </p>
+                </CardHeader>
+
+                <CardContent className="pt-0 pb-6 space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-[var(--color-primary)]">
+                    <Clock className="h-4 w-4" />
+                    <span className="font-medium">{e.when}</span>
+                  </div>
+
+                  <div className="px-4 py-3 bg-[var(--color-accent)]/10 text-sm text-[var(--color-accent-dark)]">
                     {e.highlight}
                   </div>
+
                   <Button
-                    className="bg-slate-950 text-white hover:bg-slate-900 btn-lift"
+                    className="btn-primary w-full rounded-none"
                     onClick={() => reserveRef.current?.scrollIntoView({ behavior: "smooth" })}
                   >
-                    Reserve for this
+                    Reserve for This Event
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </AnimatedSection>
           ))}
         </div>
       </Section>
@@ -355,343 +512,296 @@ export default function RestaurantLanding() {
       {/* Gallery */}
       <Section
         id="gallery"
-        eyebrow="Gallery"
-        title="The vibe, captured."
-        desc="Green overhead, warm lights, and plates that disappear fast."
-        className="py-16 md:py-24"
+        eyebrow="The Vibe"
+        title="Gallery"
+        desc="Green overhead, warm lights, and plates that disappear fast — see it for yourself."
+        className="bg-[var(--color-cream-dark)]"
       >
-        <div className="grid gap-6">
-          <Card className="border-black/10 bg-white/20 backdrop-blur-xl overflow-hidden">
+        <AnimatedSection>
+          <Card className="card-premium rounded-none overflow-hidden">
             <CardContent className="p-0">
               <Carousel>
                 <CarouselContent>
                   {media.gallery.map((img) => (
                     <CarouselItem key={img.id}>
-                      <div className="relative h-[340px] md:h-[420px]">
-                        <img alt={img.label} src={img.url} className="h-full w-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                        <Badge className="absolute left-4 bottom-4 bg-white/20 text-white border-white/25 backdrop-blur-md">
-                          {img.label}
-                        </Badge>
+                      <div className="relative h-[400px] md:h-[500px]">
+                        <img
+                          alt={img.label}
+                          src={img.url}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-charcoal)]/60 to-transparent" />
+                        <div className="absolute left-6 bottom-6">
+                          <Badge className="badge-premium rounded-none text-[var(--color-cream)] bg-[var(--color-primary-dark)]/80">
+                            {img.label}
+                          </Badge>
+                        </div>
                       </div>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="left-3" />
-                <CarouselNext className="right-3" />
+                <CarouselPrevious className="left-4 bg-[var(--color-cream)] hover:bg-[var(--color-accent)]" />
+                <CarouselNext className="right-4 bg-[var(--color-cream)] hover:bg-[var(--color-accent)]" />
               </Carousel>
             </CardContent>
           </Card>
+        </AnimatedSection>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {media.gallery.map((img) => (
+        <div className="mt-6 grid grid-cols-3 md:grid-cols-6 gap-3">
+          {media.gallery.map((img, i) => (
+            <AnimatedSection key={`thumb-${img.id}`} delay={i * 50}>
               <a
-                key={`thumb-${img.id}`}
                 href={img.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group relative rounded-xl overflow-hidden border border-black/10"
+                className="img-zoom block relative rounded-none overflow-hidden border border-[var(--color-primary)]/10"
               >
                 <img
                   alt={img.label}
                   src={img.url}
-                  className="h-28 w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                  className="h-24 w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-200" />
+                <div className="absolute inset-0 bg-[var(--color-charcoal)]/0 hover:bg-[var(--color-charcoal)]/20 transition-colors" />
               </a>
-            ))}
-          </div>
+            </AnimatedSection>
+          ))}
         </div>
       </Section>
 
       {/* Reviews */}
       <Section
         id="reviews"
-        eyebrow="Reviews"
-        title="People come for the vibe. They come back for the food."
-        desc="A few notes from guests — the energy we aim for every night."
-        className="py-16 md:py-24"
+        eyebrow="Guest Reviews"
+        title="What People Say"
+        desc="Real words from real guests — the energy we aim for every night."
       >
         <div className="grid lg:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <Card key={t.id} className="border-black/10 bg-white/20 backdrop-blur-xl">
-              <CardHeader>
-                <Stars rating={t.rating} />
-                <CardTitle className="font-serif text-2xl text-slate-950 mt-2">
-                  {t.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 pb-6">
-                <p className="text-sm text-slate-800 leading-relaxed">“{t.quote}”</p>
-              </CardContent>
-            </Card>
+          {testimonials.map((t, i) => (
+            <AnimatedSection key={t.id} delay={i * 100}>
+              <Card className="card-premium rounded-none h-full">
+                <CardHeader>
+                  <Stars rating={t.rating} />
+                  <CardTitle className="font-display text-2xl text-[var(--color-primary-dark)] mt-3">
+                    {t.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-6">
+                  <p className="text-[var(--color-charcoal)]/70 leading-relaxed italic">
+                    "{t.quote}"
+                  </p>
+                </CardContent>
+              </Card>
+            </AnimatedSection>
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <Button className="bg-slate-950 text-white hover:bg-slate-900 btn-lift" asChild>
+        <AnimatedSection delay={400} className="mt-10 flex flex-col sm:flex-row gap-4">
+          <Button className="btn-primary rounded-none" asChild>
             <a href={config.socials.googleReviewsUrl} target="_blank" rel="noreferrer">
-              Read more reviews
+              Read All Reviews
               <ArrowRight className="ml-2 h-4 w-4" />
             </a>
           </Button>
-          <Button
-            variant="outline"
-            className="bg-white/30 border-black/15 hover:bg-white/45 btn-lift"
-            asChild
-          >
+          <Button className="btn-secondary rounded-none" asChild>
             <a href={config.socials.instagramUrl} target="_blank" rel="noreferrer">
-              See latest on Instagram
+              Follow on Instagram
             </a>
           </Button>
-        </div>
+        </AnimatedSection>
       </Section>
 
-      {/* Private parties CTA */}
-      <section id="private" className="relative py-16 md:py-24 scroll-mt-24">
-        <div className="absolute inset-0 bg-slate-950" />
-        <div className="absolute inset-0 hero-grain opacity-60" />
-        <div className="relative max-w-6xl mx-auto px-5">
-          <div className="grid lg:grid-cols-[1fr_1fr] gap-10 items-start">
-            <div className="text-white">
-              <p className="text-xs uppercase tracking-[0.22em] text-white/70">
-                Private Parties
-              </p>
-              <h2 className="mt-2 font-serif text-4xl md:text-5xl leading-[1.05]">
-                Birthdays, team nights, and big group dinners.
-              </h2>
-              <p className="mt-4 text-base md:text-lg text-white/80 leading-relaxed">
-                Tell us the date + headcount. We’ll help you lock seating, food flow,
-                and bar pacing — so your group actually enjoys the night.
-              </p>
+      {/* Private Parties - Dark Section */}
+      <Section
+        id="private"
+        eyebrow="Private Events"
+        title="Your Celebration, Our Stage"
+        desc="Birthdays, corporate dinners, intimate gatherings — we'll handle the details so you can enjoy the moment."
+        dark={true}
+      >
+        <div className="grid lg:grid-cols-2 gap-10">
+          {/* Features */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { icon: Users, title: "Flexible Seating", desc: "From cozy corners to long tables for 30+" },
+              { icon: UtensilsCrossed, title: "Custom Menu", desc: "Mix veg/non-veg, adjust spice levels" },
+              { icon: Clock, title: "Smooth Pacing", desc: "Starters on arrival, mains on cue" },
+              { icon: CalendarCheck, title: "Fast Confirmation", desc: "Details via call or WhatsApp" }
+            ].map((f, i) => (
+              <AnimatedSection key={f.title} delay={i * 100}>
+                <div className="p-5 border border-[var(--color-cream)]/15 bg-[var(--color-cream)]/5">
+                  <f.icon className="h-6 w-6 text-[var(--color-accent)] mb-3" />
+                  <p className="font-semibold text-[var(--color-cream)]">{f.title}</p>
+                  <p className="text-sm text-[var(--color-cream)]/60 mt-1">{f.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
 
-              <div className="mt-8 grid sm:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-white/80" />
-                    <p className="font-medium">Flexible seating</p>
-                  </div>
-                  <p className="mt-2 text-sm text-white/75 leading-relaxed">
-                    From cozy corners to long tables for 30+.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-2">
-                    <UtensilsCrossed className="h-4 w-4 text-white/80" />
-                    <p className="font-medium">Custom menu plan</p>
-                  </div>
-                  <p className="mt-2 text-sm text-white/75 leading-relaxed">
-                    Mix veg/non-veg, spice levels, and dessert finishes.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-white/80" />
-                    <p className="font-medium">Smooth pacing</p>
-                  </div>
-                  <p className="mt-2 text-sm text-white/75 leading-relaxed">
-                    Starters on arrival, mains on cue, drinks always moving.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl p-4">
-                  <div className="flex items-center gap-2">
-                    <CalendarCheck className="h-4 w-4 text-white/80" />
-                    <p className="font-medium">Fast confirmation</p>
-                  </div>
-                  <p className="mt-2 text-sm text-white/75 leading-relaxed">
-                    Share details and we’ll confirm by call/WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <Button className="bg-white text-slate-950 hover:bg-white/90 btn-lift" asChild>
-                  <a href={config.contact.whatsappWaMe} target="_blank" rel="noreferrer">
-                    WhatsApp us now
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-white/35 bg-white/10 text-white hover:bg-white/15"
-                  onClick={() => scrollTo("contact")}
-                >
-                  View contact details
-                </Button>
-              </div>
-            </div>
-
-            <Card className="border-white/15 bg-white/10 backdrop-blur-xl text-white">
+          {/* FAQs */}
+          <AnimatedSection delay={200}>
+            <Card className="card-dark rounded-none">
               <CardHeader>
-                <CardTitle className="font-serif text-2xl">FAQs (quick)</CardTitle>
-                <p className="text-sm text-white/75">
-                  Answers to the usual questions — so you can book faster.
-                </p>
+                <CardTitle className="font-display text-2xl text-[var(--color-cream)]">
+                  Quick FAQs
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 pb-6">
                 <Accordion type="single" collapsible>
                   {faqs.map((f) => (
-                    <AccordionItem key={f.id} value={f.id} className="border-white/15">
-                      <AccordionTrigger className="hover:no-underline text-white">
-                        <span className="text-left font-medium">{f.q}</span>
+                    <AccordionItem key={f.id} value={f.id} className="border-[var(--color-cream)]/10">
+                      <AccordionTrigger className="hover:no-underline text-[var(--color-cream)] text-left">
+                        {f.q}
                       </AccordionTrigger>
                       <AccordionContent>
-                        <p className="text-sm text-white/75 leading-relaxed">{f.a}</p>
+                        <p className="text-sm text-[var(--color-cream)]/70 leading-relaxed">{f.a}</p>
                       </AccordionContent>
                     </AccordionItem>
                   ))}
                 </Accordion>
               </CardContent>
             </Card>
-          </div>
+          </AnimatedSection>
         </div>
-      </section>
 
-      {/* Contact */}
+        <AnimatedSection delay={300} className="mt-10 flex flex-col sm:flex-row gap-4">
+          <Button className="btn-accent rounded-none" asChild>
+            <a href={config.contact.whatsappWaMe} target="_blank" rel="noreferrer">
+              WhatsApp Us Now
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-[var(--color-cream)]/30 text-[var(--color-cream)] hover:bg-[var(--color-cream)]/10 rounded-none"
+            onClick={() => scrollTo("contact")}
+          >
+            View Contact Details
+          </Button>
+        </AnimatedSection>
+      </Section>
+
+      {/* Contact & Reservation */}
       <Section
         id="contact"
-        eyebrow="Contact"
-        title="Find us, call us, or reserve now."
-        desc="Use the essentials below — the fastest path to a confirmed table."
-        className="py-16 md:py-24"
+        eyebrow="Get in Touch"
+        title="Reserve Your Table"
+        desc="The fastest path to a confirmed seat — book online or reach out directly."
       >
-        <div className="grid lg:grid-cols-[1fr_1fr] gap-6">
-          <Card className="border-black/10 bg-white/20 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle className="font-serif text-2xl text-slate-950">
-                Essentials
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-6 grid gap-4">
-              <div className="rounded-xl border border-black/10 bg-white/25 p-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-slate-950 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-slate-950">{config.contact.addressLine1}</p>
-                    <p className="text-sm text-slate-700">{config.contact.addressLine2}</p>
-                    <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                      <Button className="bg-slate-950 text-white hover:bg-slate-900 btn-lift" asChild>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Contact Info */}
+          <AnimatedSection>
+            <Card className="card-premium rounded-none h-full">
+              <CardHeader>
+                <CardTitle className="font-display text-2xl text-[var(--color-primary-dark)]">
+                  Contact Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-6 space-y-5">
+                {/* Address */}
+                <div className="p-4 bg-[var(--color-primary)]/5">
+                  <div className="flex items-start gap-4">
+                    <MapPin className="h-5 w-5 text-[var(--color-primary)] mt-1" />
+                    <div>
+                      <p className="font-semibold text-[var(--color-primary-dark)]">
+                        {config.contact.addressLine1}
+                      </p>
+                      <p className="text-sm text-[var(--color-charcoal)]/60">
+                        {config.contact.addressLine2}
+                      </p>
+                      <Button className="btn-primary rounded-none mt-4" asChild>
                         <a href={config.contact.mapsUrl} target="_blank" rel="noreferrer">
-                          Get directions
+                          Get Directions
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </a>
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="bg-white/30 border-black/15 hover:bg-white/45 btn-lift"
-                        asChild
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hours */}
+                <div className="p-4 bg-[var(--color-primary)]/5">
+                  <div className="flex items-start gap-4">
+                    <Clock className="h-5 w-5 text-[var(--color-primary)] mt-1" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-[var(--color-primary-dark)]">Opening Hours</p>
+                      <div className="mt-2 space-y-1">
+                        {config.contact.hours.map((h) => (
+                          <div key={h.label} className="flex justify-between text-sm">
+                            <span className="text-[var(--color-charcoal)]/60">{h.label}</span>
+                            <span className="font-medium text-[var(--color-primary-dark)]">{h.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="p-4 bg-[var(--color-primary)]/5">
+                  <div className="flex items-start gap-4">
+                    <Phone className="h-5 w-5 text-[var(--color-primary)] mt-1" />
+                    <div>
+                      <p className="font-semibold text-[var(--color-primary-dark)]">Call Us</p>
+                      <a
+                        href={`tel:${config.contact.phoneTel}`}
+                        className="text-[var(--color-charcoal)]/60 hover:text-[var(--color-accent)] transition-colors"
                       >
-                        <a href={config.contact.whatsappWaMe} target="_blank" rel="noreferrer">
-                          WhatsApp
-                        </a>
-                      </Button>
+                        {config.contact.phoneDisplay}
+                      </a>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="rounded-xl border border-black/10 bg-white/25 p-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-slate-950 mt-0.5" />
-                  <div className="w-full">
-                    <p className="font-medium text-slate-950">Opening hours</p>
-                    <div className="mt-2 grid gap-1">
-                      {config.contact.hours.map((h) => (
-                        <div
-                          key={h.label}
-                          className="flex items-center justify-between text-sm text-slate-700"
-                        >
-                          <span>{h.label}</span>
-                          <span className="font-medium text-slate-950">{h.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-black/10 bg-white/25 p-4">
-                <div className="flex items-start gap-3">
-                  <Phone className="h-5 w-5 text-slate-950 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-slate-950">Call</p>
+                {/* Quick Links */}
+                <div className="pt-4 space-y-2">
+                  <p className="text-sm font-semibold text-[var(--color-primary-dark)]">Quick Links</p>
+                  {[
+                    { label: "Zomato", url: config.socials.zomatoUrl },
+                    { label: "Swiggy", url: config.socials.swiggyUrl },
+                    { label: "Instagram", url: config.socials.instagramUrl }
+                  ].map((link) => (
                     <a
-                      className="text-sm text-slate-700 hover:text-slate-950 transition-colors duration-200"
-                      href={`tel:${config.contact.phoneTel}`}
+                      key={link.label}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between p-3 bg-[var(--color-primary)]/5 hover:bg-[var(--color-primary)]/10 transition-colors"
                     >
-                      {config.contact.phoneDisplay}
+                      <span className="text-sm text-[var(--color-primary-dark)]">{link.label}</span>
+                      <ArrowRight className="h-4 w-4 text-[var(--color-primary)]" />
                     </a>
-                  </div>
+                  ))}
                 </div>
-              </div>
-
-              <p className="text-xs text-slate-700">
-                Contact details are MOCKED placeholders. Share your real essentials
-                anytime and I’ll plug them in.
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6">
-            <ReserveTableForm onSuccess={onReservationSaved} />
-
-            <Card className="border-black/10 bg-white/20 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="font-serif text-2xl text-slate-950">
-                  Quick links
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 pb-6 grid gap-2">
-                <a
-                  className="flex items-center justify-between rounded-xl border border-black/10 bg-white/25 px-4 py-3 transition-colors duration-200 hover:bg-white/40"
-                  href={config.socials.zomatoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="text-sm text-slate-900">Zomato</span>
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-                <a
-                  className="flex items-center justify-between rounded-xl border border-black/10 bg-white/25 px-4 py-3 transition-colors duration-200 hover:bg-white/40"
-                  href={config.socials.swiggyUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="text-sm text-slate-900">Swiggy</span>
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-                <a
-                  className="flex items-center justify-between rounded-xl border border-black/10 bg-white/25 px-4 py-3 transition-colors duration-200 hover:bg-white/40"
-                  href={config.socials.instagramUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="text-sm text-slate-900">Instagram</span>
-                  <ArrowRight className="h-4 w-4" />
-                </a>
               </CardContent>
             </Card>
-          </div>
+          </AnimatedSection>
+
+          {/* Reservation Form */}
+          <AnimatedSection delay={200}>
+            <div ref={reserveRef}>
+              <ReserveTableForm onSuccess={onReservationSaved} />
+            </div>
+          </AnimatedSection>
         </div>
       </Section>
 
       {/* Footer */}
-      <footer className="border-t border-black/10 bg-white/20 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-5 py-10">
-          <div className="flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
+      <footer className="bg-[var(--color-primary-dark)] text-[var(--color-cream)]">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-12">
+          <div className="flex flex-col md:flex-row gap-8 md:items-center md:justify-between">
             <div>
-              <p className="font-serif text-xl text-slate-950">{config.brandName}</p>
-              <p className="text-sm text-slate-700 mt-1">
-                Reserve-first landing page — designed for conversion.
+              <p className="font-display text-2xl font-semibold">{config.brandName}</p>
+              <p className="text-sm text-[var(--color-cream)]/60 mt-2 max-w-md">
+                A tropical bar & kitchen built for long nights, loud laughs, and wood-oven comfort.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {NAV.map((n) => (
                 <Button
                   key={`footer-${n.id}`}
                   variant="outline"
-                  className="bg-white/30 border-black/15 hover:bg-white/45 btn-lift"
+                  className="border-[var(--color-cream)]/20 text-[var(--color-cream)] hover:bg-[var(--color-cream)]/10 rounded-none"
                   onClick={() => scrollTo(n.id)}
                 >
                   {n.label}
@@ -700,18 +810,14 @@ export default function RestaurantLanding() {
             </div>
           </div>
 
-          <Separator className="my-8" />
+          <Separator className="my-8 bg-[var(--color-cream)]/10" />
 
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <p className="text-xs text-slate-700">
-              © {new Date().getFullYear()} {config.brandName}. All rights reserved.
-            </p>
-            <p className="text-xs text-slate-700 flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>
-                {config.contact.addressLine1}, {config.city}
-              </span>
-            </p>
+          <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between text-sm text-[var(--color-cream)]/50">
+            <p>© {new Date().getFullYear()} {config.brandName}. All rights reserved.</p>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>{config.contact.addressLine1}, {config.city}</span>
+            </div>
           </div>
         </div>
       </footer>

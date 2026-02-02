@@ -1,9 +1,9 @@
 // MOCK DATA ONLY (frontend-only). Replace with backend integration later.
 
 export const siteConfig = {
-  brandName: "Greenhouse Bar & Kitchen",
+  brandName: "Jambalaya Bar & Restaurant",
   city: "Goa",
-  tagline: "A laid-back bar & kitchen for long nights, loud laughs, and wood-oven comfort.",
+  tagline: "A tropical bar & kitchen for long nights, loud laughs, and wood-oven comfort.",
   primaryCtaLabel: "Reserve a Table",
   contact: {
     phoneDisplay: "+91 90000 00000",
@@ -28,33 +28,37 @@ export const siteConfig = {
 };
 
 export const media = {
-  heroBackground:
-    "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/fd18qa4r_image.png",
+  heroBackground: "/images/restaurant/Screenshot 2026-02-01 032106.png",
   gallery: [
     {
-      id: "ambience-1",
-      label: "Ambience",
-      url: "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/zi2ygd2p_image.png"
+      id: "exterior-night",
+      label: "Exterior",
+      url: "/images/restaurant/Screenshot 2026-02-01 032106.png"
     },
     {
-      id: "dessert-1",
-      label: "Dessert",
-      url: "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/k4edh0fk_image.png"
+      id: "interior-day",
+      label: "Interior",
+      url: "/images/restaurant/Screenshot 2026-02-01 023050.png"
     },
     {
-      id: "hall-1",
-      label: "Dining Hall",
-      url: "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/fd18qa4r_image.png"
+      id: "guests-dining",
+      label: "Dining Experience",
+      url: "/images/restaurant/Screenshot 2026-02-01 023015.png"
     },
     {
-      id: "burger-1",
-      label: "Burgers",
-      url: "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/7unvnnyd_image.png"
+      id: "interior-night",
+      label: "Evening Ambience",
+      url: "/images/restaurant/Screenshot 2026-02-01 032036.png"
     },
     {
-      id: "salad-1",
-      label: "Salads",
-      url: "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/tokr8q0p_image.png"
+      id: "drinks-bar",
+      label: "Cocktails",
+      url: "/images/restaurant/Screenshot 2026-02-01 031345.png"
+    },
+    {
+      id: "night-vibe",
+      label: "Night Vibe",
+      url: "/images/restaurant/Screenshot 2026-02-01 032045.png"
     }
   ]
 };
@@ -62,57 +66,59 @@ export const media = {
 export const signatureDishes = [
   {
     id: "sig-1",
-    name: "Wood-Oven Pizza Flight",
-    desc: "Margherita + Indiana + Frutti Di Mare — made to share.",
-    price: "From ₹340",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/7unvnnyd_image.png",
-    pill: "Best Seller"
+    name: "Goan Grilled Fish",
+    desc: "Fresh catch, perfectly grilled with spicy masala and served with fries.",
+    price: "₹420",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 032058.png",
+    pill: "Chef's Special"
   },
   {
     id: "sig-2",
     name: "Crème Brûlée",
     desc: "Silky custard, crackled caramel — the perfect finish.",
-    price: "Ask for today’s",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/k4edh0fk_image.png",
+    price: "Ask for today's",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 023031.png",
     pill: "Dessert"
   },
   {
     id: "sig-3",
-    name: "Goan Chilly Fry",
-    desc: "Squid / Chicken / Beef / Prawn — your heat level, your rules.",
+    name: "Signature Burger",
+    desc: "Juicy patty with all the fixings, served with onion rings and fries.",
     price: "₹450",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/zi2ygd2p_image.png",
-    pill: "Spicy"
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 023108.png",
+    pill: "Best Seller"
   },
   {
     id: "sig-4",
-    name: "Chicken Tikka + Cocktails",
-    desc: "Smoky grill bites with bar-forward mixes.",
-    price: "₹420",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/fd18qa4r_image.png",
-    pill: "Pairing"
-  },
-  {
-    id: "sig-5",
     name: "Italian Seafood Salad",
     desc: "Fresh, bright, and built for the beach.",
     price: "₹390",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/tokr8q0p_image.png",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 023120.png",
     pill: "Fresh"
   },
   {
+    id: "sig-5",
+    name: "Tiramisu",
+    desc: "Classic Italian dessert with coffee-soaked layers.",
+    price: "Ask for today's",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 032022.png",
+    pill: "Dessert"
+  },
+  {
     id: "sig-6",
-    name: "Paneer Pakoras",
-    desc: "Crisp outside, soft inside — a classic start.",
-    price: "₹540",
-    imageUrl:
-      "https://customer-assets.emergentagent.com/job_e454242d-3672-4d3e-9006-cc8e825e06c6/artifacts/7unvnnyd_image.png",
+    name: "Crispy Pakoras",
+    desc: "Golden fried delights with spicy chutney.",
+    price: "₹340",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 031355.png",
     pill: "Starter"
+  },
+  {
+    id: "sig-7",
+    name: "Chicken Fries Combo",
+    desc: "Crispy chicken bites with golden fries.",
+    price: "₹380",
+    imageUrl: "/images/restaurant/Screenshot 2026-02-01 031445.png",
+    pill: "Popular"
   }
 ];
 
@@ -215,17 +221,17 @@ export const menuCategories = [
       {
         name: "Fresh Fruit Salad (Chunks of seasonal fruit)",
         price: 0,
-        meta: "Ask for today’s"
+        meta: "Ask for today's"
       },
       {
         name: "Brownie Mania (Warm brownie with vanilla gelato)",
         price: 0,
-        meta: "Ask for today’s"
+        meta: "Ask for today's"
       },
-      { name: "Banana Split", price: 0, meta: "Ask for today’s" },
-      { name: "Tiramisu", price: 0, meta: "Ask for today’s" },
-      { name: "Creme Brulee", price: 0, meta: "Ask for today’s" },
-      { name: "Nutella Pizza", price: 0, meta: "Ask for today’s" },
+      { name: "Banana Split", price: 0, meta: "Ask for today's" },
+      { name: "Tiramisu", price: 0, meta: "Ask for today's" },
+      { name: "Creme Brulee", price: 0, meta: "Ask for today's" },
+      { name: "Nutella Pizza", price: 0, meta: "Ask for today's" },
       {
         name: "Italian Gelato (2 scoops)",
         price: 0,
@@ -248,7 +254,7 @@ export const events = [
     title: "Cocktail Hour",
     desc: "House pours, sharp mixes, and easy conversation.",
     when: "Daily • 5:00 PM – 7:00 PM",
-    highlight: "Ask for the bartender’s special"
+    highlight: "Ask for the bartender's special"
   },
   {
     id: "event-3",
@@ -292,7 +298,7 @@ export const faqs = [
   {
     id: "faq-2",
     q: "Can you accommodate birthdays and private parties?",
-    a: "Absolutely. Tell us your date, headcount, and vibe — we’ll set up seating, music, and a custom menu plan."
+    a: "Absolutely. Tell us your date, headcount, and vibe — we'll set up seating, music, and a custom menu plan."
   },
   {
     id: "faq-3",

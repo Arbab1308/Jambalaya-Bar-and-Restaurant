@@ -45,21 +45,26 @@ const webpackConfig = {
     },
   },
   webpack: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
     configure: (webpackConfig) => {
+      // Add path alias for @ -> src
+      webpackConfig.resolve = {
+        ...webpackConfig.resolve,
+        alias: {
+          ...webpackConfig.resolve?.alias,
+          '@': path.resolve(__dirname, 'src'),
+        },
+      };
 
       // Add ignored patterns to reduce watched directories
-        webpackConfig.watchOptions = {
-          ...webpackConfig.watchOptions,
-          ignored: [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/build/**',
-            '**/dist/**',
-            '**/coverage/**',
-            '**/public/**',
+      webpackConfig.watchOptions = {
+        ...webpackConfig.watchOptions,
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/build/**',
+          '**/dist/**',
+          '**/coverage/**',
+          '**/public/**',
         ],
       };
 
